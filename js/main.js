@@ -19,24 +19,50 @@
 //* ***DATA*** *//
 const canvas = document.getElementById("game-layer");
 const ctx = canvas.getContext("2d");
-
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 450;
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
-const colWidth = Math.floor((canvas.width * 0.9) / numBellCols);
-const SCREEN_X_MID = Math.floor(canvas.width / 2);
+const bgCanvas = document.getElementById("background-layer");
+const bgCtx = bgCanvas.getContext("2d");
+bgCanvas.width = GAME_WIDTH;
+bgCanvas.height = GAME_HEIGHT;
+
+//* snow layer
+const snowCanvas = document.getElementById("snow-layer");
+const snowCtx = snowCanvas.getContext("2d");
+snowCanvas.width = GAME_WIDTH;
+snowCanvas.height = GAME_HEIGHT;
+
+let hue = 0;
+
+const snow = {
+  snowArray: [],
+  size: 3,
+  amt: 15,
+};
 
 const gravityPull = 3;
 const difficulty = 3;
 const framesPerSnow = 200;
+const bellSize = 10;
+const numBellCols = 7;
+const bellArray = [];
 
 const numBells = 10; //* change number of bells
 const bellSpacing = canvas.height / 5;
 const playerJump = bellSpacing * 2;
 const playerJumpVelocity = -8;
 const minBellHeight = playerJump - bellSize;
+
+const mouse = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+};
+
+const colWidth = Math.floor((canvas.width * 0.9) / numBellCols);
+const SCREEN_X_MID = Math.floor(canvas.width / 2);
 
 let playerActivated = false;
 
@@ -49,9 +75,152 @@ let crossedHeight = false;
 let score = 0;
 let cameraPositionY = 0;
 
-const mouse = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
+//! Thought - shift the bells down on the redraw to give illusion that player has scaled upwards.
+//! BELLS ONLY FALL UP TO A CERTAIN Y, then they are static => based on position.
+
+//* ***CLASSES*** *//
+//* Generate Bell
+class Bell {
+  constructor(posX, posY) {
+    this.x = posX;
+    this.y = posY;
+    this.velocityX = 0;
+    this.velocityY = 0;
+    this.color = "yellow";
+    this.size = bellSize;
+    this.collided = false;
+  }
+  update() {
+    //! falling bell generates if player has not touched any bells.
+    //! bells will stop when player collides
+    // if (score === 0) {
+    this.velocityY = 0.5;
+    this.x += this.velocityX;
+    this.y += this.velocityY;
+
+    this.velocityX *= 0.9;
+    this.velocityY *= 0.9;
+    // }
+  }
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+//* Generate Player
+//? use a jumping method inside
+class Player {
+  constructor() {
+    this.width = 20;
+    this.height = 20;
+    this.mass = 10; //?
+    this.x = canvas.width / 2;
+    this.y = canvas.height - this.height; //! testing
+    this.velocityX = 3;
+    this.velocityY = -8; //? what is a good boost rate?
+    this.jumping = false;
+    this.collided = false; //? useless?
+    this.parallax = this.y; //? useless?
+  }
+  update(secondsPassed) {
+    if (!playerActivated) {
+      return;
+    } // prevent left right movement till screen is clicked.
+
+    if (mouseClick && this.jumping === false) {
+      // this.y += 50 * secondsPassed;  //! change to seconds
+      this.y += -playerJump;
+
+      mouseClick = false; //! testing
+      this.jumping = true;
+      this.parallax = GAME_HEIGHT - this.y; //? useless?
+    }
+
+    if (this.collided) {
+      this.velocityY += -10; //! TUNE
+      this.y += -50;
+      this.collided = false;
+    }
+
+    //? trying this method to "calibrate mouse move to x move". wrap this in condition?
+    let dx = Math.floor(mouse.x - this.x);
+    //* scale down dx
+    if (dx > this.velocityX) {
+      dx /= this.velocityX;
+      dx = Math.round(dx);
+    }
+
+    this.x += dx;
+
+    // console.log("dx", dx);
+    // console.log("playerx", this.x);
+
+    // this.y += movingSpeed * secondsPassed;
+    this.y += gravityPull * 2;
+    this.velocityY *= 0.9;
+
+    //*prevent player from leaving canvas
+    if (this.x < 0) {
+      this.x = 0;
+    } else if (this.x + this.width > canvas.width) {
+      this.x = canvas.width - this.width;
+    }
+
+    if (this.y >= canvas.height - this.height) {
+      this.y = canvas.height - this.height;
+      this.velocityY = 0; //? learn this properly
+      this.jumping = false;
+    }
+  }
+  draw() {
+    ctx.fillStyle = "blue";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+    // if (this.jumping === true) {
+    // bgCtx.drawImage(img, 0, this.parallax, 800, 600)}; //! COULD THIS BE IT?? Move background relative to player based on Y conditions
+    // }
+  }
+  addScore() {
+    score += 100;
+    console.log("Player score", score);
+  }
+}
+
+class Snow {
+  constructor() {
+    this.x = Math.floor(Math.random() * snowCanvas.width);
+    this.y = Math.floor(Math.random() - 10) + 5;
+    this.size = Math.floor(Math.random() * snow.size) + 1;
+    this.velocityX = Math.random() * 3 - 1.5;
+    this.velocityY = Math.random() * gravityPull + 0.5;
+    this.color = `hsl(${hue}, 100%, 50%)`;
+  }
+  update() {
+    this.x += Math.random() * 1 - 0.5; //* 2D vector creation
+    this.y += this.velocityY;
+  }
+  draw() {
+    snowCtx.fillStyle = this.color;
+    snowCtx.beginPath(); //* like a paint path
+    snowCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    snowCtx.fill();
+    // bgCtx.drawImage(img, 0, this.y, 800, 600); //! Endless scroller?
+  }
+}
+
+const generateSnow = () => {
+  for (let i = 0; i < snow.amt; i++) {
+    snow.snowArray.push(new Snow());
+  }
+};
+
+const snowRender = (arr) => {
+  for (let i = 0; i < arr.length; i++) {
+    arr[i].update();
+    arr[i].draw();
+  }
 };
 
 //* ***MAIN PROGRAMME*** *//
