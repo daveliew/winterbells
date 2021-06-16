@@ -20,9 +20,6 @@
 const canvas = document.getElementById("game-layer");
 const ctx = canvas.getContext("2d");
 
-const audioObj = new Audio("/assets/winterbells.mp3");
-audioObj.play();
-
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 450;
 canvas.width = GAME_WIDTH;
