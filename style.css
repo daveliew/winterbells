@@ -1,0 +1,54 @@
+body {
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+  background-color: darkslategray;
+}
+
+h1 {
+  text-align: center;
+  color: mistyrose;
+}
+
+h2 {
+  text-align: center;
+  font-size: 1em;
+  color: gainsboro;
+}
+
+#background-layer {
+  position: absolute;
+  background: rgba(0, 200, 200, 0.7);
+  background-image: linear-gradient(black, white);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 660px;
+  height: 495px;
+  border: 2px solid black;
+  z-index: 1;
+}
+
+#snow-layer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 450px;
+  border: 2px solid black;
+  transform: translate(-50%, -50%);
+
+  z-index: 2;
+}
+
+#game-layer {
+  position: absolute;
+  background: rgba(23, 200, 200, 0.2);
+  top: 50%;
+  left: 50%;
+  transform: translate(-51%, -51%);
+  width: 600px;
+  height: 450px;
+  border: 2px solid black;
+  z-index: 3;
+}
